@@ -68,8 +68,8 @@ cp .env.example .env   # ajuste conforme necessário
 # Verifica Ollama e a voz do Piper
 uv run localvoice check
 
-# Gateway (HTTP/WebSocket) — serve também o cliente web em /
-uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8000
+# Gateway (serve também o cliente web em /)
+uv run localvoice serve
 
 # Worker (Agno + Piper)
 uv run faststream run src.worker.app:app
@@ -78,9 +78,24 @@ uv run faststream run src.worker.app:app
 uv run --group ui streamlit run src/ui/app.py
 ```
 
-Abra `http://<ip-do-pc>:8000/` no navegador do celular (mesma rede), toque no
-microfone e fale. O reconhecimento de voz do navegador requer contexto seguro
-(HTTPS) ou `localhost`; para acesso via IP na LAN, use um túnel/proxy HTTPS.
+No PC, abra `http://localhost:8000/` — `localhost` é contexto seguro, então o
+microfone funciona direto.
+
+## HTTPS na rede local (para o celular)
+
+O reconhecimento de voz (Web Speech API) e o `crypto.randomUUID` do navegador só
+funcionam em **contexto seguro**: HTTPS ou `localhost`. Por `http://<ip>` na LAN o
+navegador bloqueia o microfone. Para usar pelo celular, sirva em HTTPS com um
+certificado autoassinado:
+
+```bash
+uv sync --group tls          # instala o cryptography
+uv run localvoice gen-cert   # gera certs/localvoice.crt e .key (localhost + IPs locais)
+uv run localvoice serve      # sobe em https:// automaticamente quando o cert existe
+```
+
+Abra `https://<ip-do-pc>:8000/` no celular (mesma rede, use Chrome) e aceite o
+aviso de certificado autoassinado uma vez. Depois o microfone é liberado.
 
 ## Configuração
 

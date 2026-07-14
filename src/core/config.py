@@ -40,11 +40,22 @@ class Settings(BaseSettings):
     gateway_host: str = "0.0.0.0"
     gateway_port: int = 8000
 
+    # TLS opcional (para servir o gateway via HTTPS). Gere com 'localvoice gen-cert'.
+    ssl_certfile: Path | None = Path("certs/localvoice.crt")
+    ssl_keyfile: Path | None = Path("certs/localvoice.key")
+
     def resolved_piper_config_path(self) -> Path:
         """Descobre o ``.onnx.json`` da voz quando não é informado explicitamente."""
         if self.piper_config_path is not None:
             return self.piper_config_path
         return self.piper_voice_path.with_suffix(self.piper_voice_path.suffix + ".json")
+
+    def tls_files(self) -> tuple[Path, Path] | None:
+        """Retorna ``(cert, key)`` quando ambos existem; caso contrário ``None``."""
+        cert, key = self.ssl_certfile, self.ssl_keyfile
+        if cert is not None and key is not None and cert.is_file() and key.is_file():
+            return cert, key
+        return None
 
 
 @lru_cache

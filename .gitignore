@@ -19,3 +19,6 @@ voices/*.onnx.json
 # Cache de testes/linters
 .pytest_cache/
 .ruff_cache/
+
+# Certificados TLS locais (nunca versionar chaves)
+certs/
