@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Ambiente e segredos
+.env
+
+# Modelos de voz do Piper (baixados localmente)
+voices/*.onnx
+voices/*.onnx.json
+
+# Cache de testes/linters
+.pytest_cache/
+.ruff_cache/
