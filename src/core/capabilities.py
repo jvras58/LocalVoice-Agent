@@ -11,6 +11,7 @@ from pathlib import Path
 from src.core.config import Settings
 
 _OLLAMA_PROBE_TIMEOUT_SECONDS = 2.0
+_VALID_URL_SCHEMES = ("http://", "https://")
 
 
 @dataclass(frozen=True)
@@ -35,7 +36,13 @@ class CapabilityReport:
 
 
 def probe_ollama(host: str, timeout: float = _OLLAMA_PROBE_TIMEOUT_SECONDS) -> bool:
-    """Retorna ``True`` se o endpoint ``/api/tags`` do Ollama responder 200."""
+    """Retorna ``True`` se o endpoint ``/api/tags`` do Ollama responder 200.
+
+    Um host sem esquema (ex.: ``"0.0.0.0"``) não é uma URL válida para conexão
+    e é tratado como indisponível, em vez de derrubar o preflight.
+    """
+    if not host.startswith(_VALID_URL_SCHEMES):
+        return False
     url = f"{host.rstrip('/')}/api/tags"
     try:
         with urllib.request.urlopen(url, timeout=timeout) as response:

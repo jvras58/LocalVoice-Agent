@@ -42,3 +42,8 @@ def test_describe_report_lists_all_capabilities(monkeypatch, tmp_path: Path) -> 
     report = caps.resolve_capabilities(_settings_with_voice(tmp_path, with_config=True))
     lines = caps.describe_report(report)
     assert len(lines) == 3
+
+
+def test_probe_ollama_returns_false_on_malformed_host() -> None:
+    """Host sem esquema (ex.: "0.0.0.0") não deve derrubar o preflight."""
+    assert caps.probe_ollama("0.0.0.0") is False
