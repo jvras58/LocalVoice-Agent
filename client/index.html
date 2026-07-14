@@ -2,157 +2,180 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>LocalVoice</title>
-  <style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif;
-      background: #0f1220; color: #e7e9f2;
-      display: flex; flex-direction: column;
-    }
-    header { padding: 16px; text-align: center; border-bottom: 1px solid #232743; }
-    header h1 { margin: 0; font-size: 1.15rem; letter-spacing: .5px; }
-    #status { font-size: .8rem; margin-top: 6px; color: #8b90a8; }
-    #status.on { color: #4ade80; }
-    #status.off { color: #f87171; }
-    main { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-    .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; line-height: 1.35; font-size: .95rem; }
-    .user { align-self: flex-end; background: #2563eb; border-bottom-right-radius: 4px; }
-    .agent { align-self: flex-start; background: #232743; border-bottom-left-radius: 4px; }
-    .sys { align-self: center; color: #8b90a8; font-size: .8rem; text-align: center; }
-    footer { padding: 18px; border-top: 1px solid #232743; display: flex; justify-content: center; }
-    #mic {
-      width: 76px; height: 76px; border-radius: 50%; border: none; cursor: pointer;
-      background: #2563eb; color: #fff; font-size: 1.7rem; transition: transform .1s, background .2s;
-    }
-    #mic:active { transform: scale(.94); }
-    #mic.listening { background: #ef4444; animation: pulse 1.2s infinite; }
-    #mic:disabled { background: #3a3f5c; cursor: not-allowed; }
-    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); } 50% { box-shadow: 0 0 0 14px rgba(239,68,68,0); } }
-  </style>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+  />
+
+  <meta
+    name="description"
+    content="LocalVoice — assistente de voz privado executado localmente."
+  />
+
+  <meta name="theme-color" content="#080b16" />
+
+  <title>LocalVoice | Assistente de voz</title>
+
+  <link rel="stylesheet" href="./css/styles.css" />
+  <script src="./js/app.js" defer></script>
 </head>
+
 <body>
-  <header>
-    <h1>🎙️ LocalVoice</h1>
-    <div id="status" class="off">desconectado</div>
-  </header>
-  <main id="log"></main>
-  <footer>
-    <button id="mic" title="Toque para falar">🎤</button>
-  </footer>
+  <div class="page">
+    <section class="app-shell" aria-label="Assistente LocalVoice">
+      <header class="app-header">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M12 3a3.5 3.5 0 0 0-3.5 3.5v5a3.5 3.5 0 1 0 7 0v-5A3.5 3.5 0 0 0 12 3Z"
+                fill="currentColor"
+              />
 
-  <script>
-    const statusEl = document.getElementById("status");
-    const logEl = document.getElementById("log");
-    const micBtn = document.getElementById("mic");
+              <path
+                d="M5.75 10.75a.75.75 0 0 1 .75.75 5.5 5.5 0 0 0 11 0 .75.75 0 0 1 1.5 0 7 7 0 0 1-6.25 6.96V21h2a.75.75 0 0 1 0 1.5h-5.5a.75.75 0 0 1 0-1.5h2v-2.54A7 7 0 0 1 5 11.5a.75.75 0 0 1 .75-.75Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
 
-    function makeSessionId() {
-      if (window.crypto && typeof crypto.randomUUID === "function") {
-        return crypto.randomUUID();
-      }
-      // crypto.randomUUID só existe em contexto seguro (HTTPS/localhost).
-      return "sess-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-    }
+          <div class="brand-content">
+            <h1>LocalVoice</h1>
+            <p>Assistente de voz privado e executado localmente</p>
+          </div>
+        </div>
 
-    const sessionId = makeSessionId();
-    const wsProto = location.protocol === "https:" ? "wss" : "ws";
-    const wsUrl = `${wsProto}://${location.host}/ws/${sessionId}`;
+        <div
+          id="status"
+          class="status-pill connecting"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-text">Conectando</span>
+        </div>
+      </header>
 
-    let socket = null;
-    let audioCtx = null;
-    let listening = false;
+      <main
+        id="conversation"
+        class="conversation"
+        aria-label="Histórico da conversa"
+        aria-live="polite"
+      >
+        <section id="empty-state" class="empty-state">
+          <div class="empty-illustration" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M12 3a3.5 3.5 0 0 0-3.5 3.5v5a3.5 3.5 0 1 0 7 0v-5A3.5 3.5 0 0 0 12 3Z"
+                fill="currentColor"
+              />
 
-    function addMessage(text, kind) {
-      const div = document.createElement("div");
-      div.className = `msg ${kind}`;
-      div.textContent = text;
-      logEl.appendChild(div);
-      logEl.scrollTop = logEl.scrollHeight;
-    }
+              <path
+                d="M5.75 10.75a.75.75 0 0 1 .75.75 5.5 5.5 0 0 0 11 0 .75.75 0 0 1 1.5 0 7 7 0 0 1-6.25 6.96V21h2a.75.75 0 0 1 0 1.5h-5.5a.75.75 0 0 1 0-1.5h2v-2.54A7 7 0 0 1 5 11.5a.75.75 0 0 1 .75-.75Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
 
-    function setStatus(text, on) {
-      statusEl.textContent = text;
-      statusEl.className = on ? "on" : "off";
-    }
+          <span class="empty-eyebrow">Assistente disponível</span>
 
-    function connect() {
-      socket = new WebSocket(wsUrl);
-      socket.onopen = () => setStatus("conectado", true);
-      socket.onclose = () => { setStatus("reconectando…", false); setTimeout(connect, 1500); };
-      socket.onerror = () => setStatus("erro de conexão", false);
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.reply_text) addMessage(data.reply_text, "agent");
-        if (data.audio_buffer_b64) playWavBase64(data.audio_buffer_b64);
-      };
-    }
+          <h2>Como posso ajudar?</h2>
 
-    function base64ToArrayBuffer(b64) {
-      const binary = atob(b64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      return bytes.buffer;
-    }
+          <p>
+            Toque no microfone e fale naturalmente. Sua mensagem será
+            transcrita e enviada ao assistente.
+          </p>
 
-    async function playWavBase64(b64) {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") await audioCtx.resume();
-      const buffer = await audioCtx.decodeAudioData(base64ToArrayBuffer(b64));
-      const source = audioCtx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioCtx.destination);
-      source.start();
-    }
+          <div class="privacy-note">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 9.73V18h-2v-2.27a2 2 0 1 1 2 0Z"
+                fill="currentColor"
+              />
+            </svg>
 
-    // --- STT via Web Speech API ---
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = null;
+            Processamento protegido no ambiente local
+          </div>
+        </section>
 
-    if (SpeechRecognition) {
-      recognition = new SpeechRecognition();
-      recognition.lang = "pt-BR";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+        <div
+          id="typing-indicator"
+          class="typing-indicator"
+          aria-label="O assistente está preparando uma resposta"
+        >
+          <div class="message-avatar agent-avatar" aria-hidden="true">
+            LV
+          </div>
 
-      recognition.onstart = () => { listening = true; micBtn.classList.add("listening"); };
-      recognition.onend = () => { listening = false; micBtn.classList.remove("listening"); };
-      recognition.onerror = (e) => addMessage(`STT: ${e.error}`, "sys");
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.trim();
-        if (!transcript) return;
-        addMessage(transcript, "user");
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({ text: transcript }));
-        } else {
-          addMessage("Sem conexão com o servidor.", "sys");
-        }
-      };
-    } else {
-      micBtn.disabled = true;
-      addMessage("Este navegador não suporta reconhecimento de voz (Web Speech API).", "sys");
-    }
+          <div class="typing-content">
+            <div class="typing-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
 
-    micBtn.addEventListener("click", async () => {
-      if (!recognition) return;
-      // Garante o AudioContext liberado pelo gesto do usuário (mobile).
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") await audioCtx.resume();
-      if (listening) recognition.stop();
-      else recognition.start();
-    });
+            <span>Preparando resposta...</span>
+          </div>
+        </div>
+      </main>
 
-    if (!window.isSecureContext) {
-      addMessage(
-        "Conectado, mas o microfone (STT) exige contexto seguro: use " +
-        "http://localhost:8000 no PC, ou um túnel HTTPS no celular. " +
-        "Por http://IP-da-rede o navegador bloqueia o reconhecimento de voz.",
-        "sys"
-      );
-    }
+      <footer class="voice-controls">
+        <div class="voice-panel">
+          <div class="voice-description">
+            <strong id="voice-title">Pronto para ouvir</strong>
 
-    connect();
-  </script>
+            <span id="voice-description">
+              Clique no botão e comece a falar
+            </span>
+          </div>
+
+          <div class="mic-wrapper">
+            <button
+              id="mic"
+              class="mic-button"
+              type="button"
+              title="Clique para falar"
+              aria-label="Iniciar reconhecimento de voz"
+              aria-pressed="false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 2a3.5 3.5 0 0 0-3.5 3.5v6a3.5 3.5 0 1 0 7 0v-6A3.5 3.5 0 0 0 12 2Z"
+                  fill="currentColor"
+                />
+
+                <path
+                  d="M5.75 10.75a.75.75 0 0 1 .75.75 5.5 5.5 0 0 0 11 0 .75.75 0 0 1 1.5 0 7 7 0 0 1-6.25 6.96V21h2a.75.75 0 0 1 0 1.5h-5.5a.75.75 0 0 1 0-1.5h2v-2.54A7 7 0 0 1 5 11.5a.75.75 0 0 1 .75-.75Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+
+            <span id="mic-label" class="mic-label">
+              TOQUE PARA FALAR
+            </span>
+          </div>
+
+          <div
+            id="audio-visualizer"
+            class="audio-visualizer"
+            aria-hidden="true"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <p class="footer-note">
+          O reconhecimento de voz funciona melhor no Chrome ou Edge.
+        </p>
+      </footer>
+    </section>
+  </div>
 </body>
 </html>
