@@ -10,13 +10,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Parâmetros operacionais do LocalVoice.
 
-    As variáveis correspondem aos campos abaixo (ex.: ``REDIS_URL``,
-    ``OLLAMA_HOST``) e podem ser definidas em um arquivo ``.env`` na raiz
-    do projeto.
+    As variáveis usam o prefixo ``LOCALVOICE_`` (ex.: ``LOCALVOICE_OLLAMA_HOST``)
+    e podem ser definidas em um arquivo ``.env`` na raiz do projeto. O prefixo
+    evita colisão com variáveis de ferramentas — em especial ``OLLAMA_HOST``,
+    usada pelo próprio Ollama para definir o endereço de escuta.
     """
 
     model_config = SettingsConfigDict(
         env_file=".env",
+        env_prefix="LOCALVOICE_",
         extra="ignore",
     )
 

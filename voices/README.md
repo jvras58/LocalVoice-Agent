@@ -14,7 +14,7 @@ Isso cria, neste diretório:
 - `pt_BR-faber-medium.onnx`
 - `pt_BR-faber-medium.onnx.json`
 
-Ajuste `PIPER_VOICE_PATH` no `.env` caso use outra voz. Quando o
+Ajuste `LOCALVOICE_PIPER_VOICE_PATH` no `.env` caso use outra voz. Quando o
 arquivo de configuração segue o padrão `<modelo>.onnx.json`, ele é descoberto
 automaticamente.
 

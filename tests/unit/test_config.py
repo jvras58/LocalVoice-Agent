@@ -27,7 +27,14 @@ def test_explicit_config_path_is_preserved() -> None:
     assert settings.resolved_piper_config_path() == explicit
 
 
-def test_env_override(monkeypatch) -> None:
-    monkeypatch.setenv("OLLAMA_MODEL", "hermes3")
+def test_env_prefix_override(monkeypatch) -> None:
+    monkeypatch.setenv("LOCALVOICE_OLLAMA_MODEL", "hermes3")
     settings = Settings()
     assert settings.ollama_model == "hermes3"
+
+
+def test_unprefixed_tool_env_is_ignored(monkeypatch) -> None:
+    """Vars de ferramentas sem o prefixo (ex.: OLLAMA_HOST do Ollama) são ignoradas."""
+    monkeypatch.setenv("OLLAMA_HOST", "0.0.0.0")
+    settings = Settings()
+    assert settings.ollama_host == "http://localhost:11434"

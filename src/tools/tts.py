@@ -54,7 +54,7 @@ def load_piper_voice(
         raise FileNotFoundError(
             f"Modelo de voz do Piper não encontrado em: {voice_path}. "
             "Baixe uma voz (ver voices/README.md) ou ajuste "
-            "a variável PIPER_VOICE_PATH."
+            "a variável LOCALVOICE_PIPER_VOICE_PATH."
         )
 
     from piper import PiperVoice

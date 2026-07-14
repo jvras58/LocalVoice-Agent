@@ -84,7 +84,7 @@ microfone e fale. O reconhecimento de voz do navegador requer contexto seguro
 
 ## Configuração
 
-As variáveis (ver `.env.example`) correspondem 1:1 aos campos do `Settings`: URL do
+Todas as variáveis usam o prefixo `LOCALVOICE_` (ver `.env.example`) — o prefixo evita colisão com variáveis de ferramentas como `OLLAMA_HOST`: URL do
 Redis e nomes das filas, host e modelo do Ollama, caminho da voz do Piper e
 host/porta do gateway.
 
