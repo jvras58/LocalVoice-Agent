@@ -9,6 +9,7 @@ dependencies = [
     "fastapi>=0.115",
     "faststream[redis]>=0.5",
     "ollama>=0.4",
+    "openai>=2.45.0",
     "piper-tts>=1.2",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
@@ -46,10 +47,17 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-
-[tool.ruff.lint.isort]
-known-first-party = ["src"]
+# Silencia apenas warnings de deprecacao internos de terceiros (Starlette/FastStream),
+# mantendo visiveis os warnings originados no nosso proprio codigo.
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+    "ignore:'asyncio.iscoroutinefunction' is deprecated",
+    "ignore:Specifying 'lifespan_context' manually is no longer necessary",
+]
