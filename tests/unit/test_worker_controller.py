@@ -36,11 +36,12 @@ class FakeSynthesizer:
         return "QUJD"
 
 
-def make_controller(content: str = "**Olá!**") -> tuple[WorkerController, FakePublisher]:
+def make_controller(
+        content: str = "**Olá!**") -> tuple[WorkerController, FakePublisher]:
     publisher = FakePublisher()
     controller = WorkerController(Settings(), publisher)
-    controller._team = FakeTeam(content)  # type: ignore[assignment]
-    controller._synthesizer = FakeSynthesizer()  # type: ignore[assignment]
+    controller._team = FakeTeam(content)
+    controller._synthesizer = FakeSynthesizer() 
     return controller, publisher
 
 
@@ -51,7 +52,7 @@ async def test_generate_reply_preserves_session_and_normalizes_output() -> None:
 
     assert reply == "Olá!"
     assert controller._team is not None
-    assert controller._team.calls == [("oi", "sess-1")]  # type: ignore[attr-defined]
+    assert controller._team.calls == [("oi", "sess-1")]
 
 
 async def test_handle_voice_command_publishes_agent_response() -> None:
