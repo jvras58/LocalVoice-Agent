@@ -1,118 +1,102 @@
 # 🎙️ LocalVoice Agent (Piper TTS)
 
-Assistente de voz assíncrono, local e focado em privacidade. O PC atua como
-*worker* (LLM + TTS) e o celular como interface de entrada (STT no navegador) e
-saída (reprodução do áudio transmitido).
+Assistente de voz assíncrono, local e focado em privacidade. O PC executa o
+agente, as ferramentas e o TTS; o celular funciona como interface de voz.
 
 ![Architecture](https://img.shields.io/badge/Architecture-Event--Driven-blue)
 ![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20FastStream%20%7C%20Agno%20%7C%20Piper-success)
 ![LLM](https://img.shields.io/badge/LLM-Local%20(Ollama)-orange)
 
+## Capacidades
+
+- Conversa em português do Brasil com histórico separado por sessão.
+- Respostas normalizadas antes da interface e do Piper, sem Markdown ou `*`.
+- Equipe Agno com membros especializados em conversação e sistema local.
+- Consulta de data/hora e diagnóstico dos recursos locais por ferramentas seguras.
+- STT no navegador, LLM via Ollama e TTS local com Piper.
+- Comunicação assíncrona por WebSocket e Redis.
+
 ## Componentes
 
-- **Cliente web** (`client/index.html`): Web Speech API (STT) + WebSocket + Web
-  Audio API (reprodução do WAV em Base64).
-- **Gateway** (`src/gateway/`): FastAPI + WebSocket, publica comandos e devolve
-  o áudio pela conexão da sessão.
+- **Cliente web** (`client/`): Web Speech API, WebSocket e Web Audio API.
+- **Gateway** (`src/gateway/`): FastAPI, arquivos estáticos e WebSocket.
 - **Broker**: Redis (`voice_commands`, `agent_responses`).
-- **Worker** (`src/worker/`): FastStream + equipe Agno (Ollama) + Piper TTS.
+- **Worker** (`src/worker/`): Agno Team, normalização e Piper TTS.
+- **Memória**: SQLite local em `data/localvoice.db`.
 
 Detalhes em [`docs/architecture.md`](docs/architecture.md).
 
 ## Estrutura
 
-```
+```text
 src/
-├── core/       # config, schemas, instructions, capabilities (preflight)
-├── tools/      # tts.py (Piper)
-├── agents/     # factory.py, team.py (construtores Agno)
-├── gateway/    # app.py (FastAPI+WS), connections.py
-├── worker/     # app.py (FastStream)
+├── agents/     # conversation_agent.py, system_agent.py, team.py e factory.py
+├── core/       # config, schemas, instructions, normalização e preflight
+├── gateway/    # FastAPI, arquivos estáticos e WebSocket
+├── tools/      # ferramentas do agente e Piper TTS
+├── worker/     # processamento assíncrono
 ├── ui/         # painel Streamlit
-└── main.py     # CLI (localvoice check | info)
+└── main.py     # CLI
 client/         # cliente web mobile
-tests/unit/     # testes (pytest)
-voices/         # modelos .onnx do Piper (ignorados pelo Git)
+tests/          # testes unitários e de integração
+voices/         # modelos locais do Piper
 ```
-
-## Pré-requisitos
-
-- [uv](https://github.com/astral-sh/uv)
-- Docker e Docker Compose (Redis e PostgreSQL/pgvector)
-- [Ollama](https://ollama.ai/) rodando localmente
-- Uma voz do Piper (`.onnx` + `.onnx.json`) em `voices/`
 
 ## Instalação
 
 ```bash
-# 1. Infraestrutura (Redis + pgvector)
 docker compose up -d
-
-# 2. Dependências
 uv sync
-
-# 3. Modelo do LLM
 ollama pull llama3.1:8b
-
-# 4. Voz do Piper (ver voices/README.md)
 uv run python -m piper.download_voices pt_BR-faber-medium
 mv pt_BR-faber-medium.onnx* voices/
-
-# 5. Configuração
-cp .env.example .env   # ajuste conforme necessário
+cp .env.example .env
 ```
 
 ## Execução
 
+Em terminais separados:
+
 ```bash
-# Verifica Ollama e a voz do Piper
 uv run localvoice check
-
-# Gateway (serve também o cliente web em /)
 uv run localvoice serve
-
-# Worker (Agno + Piper)
 uv run faststream run src.worker.app:app
-
-# Painel de operação/debug (opcional)
-uv run --group ui streamlit run src/ui/app.py
 ```
 
-No PC, abra `http://localhost:8000/` — `localhost` é contexto seguro, então o
-microfone funciona direto.
+Abra `http://localhost:8000/` no computador.
 
-## HTTPS na rede local (para o celular)
+## HTTPS na rede local
 
-O reconhecimento de voz (Web Speech API) e o `crypto.randomUUID` do navegador só
-funcionam em **contexto seguro**: HTTPS ou `localhost`. Por `http://<ip>` na LAN o
-navegador bloqueia o microfone. Para usar pelo celular, sirva em HTTPS com um
-certificado autoassinado:
+Para liberar o microfone no celular:
 
 ```bash
-uv sync --group tls          # instala o cryptography
-uv run localvoice gen-cert   # gera certs/localvoice.crt e .key (localhost + IPs locais)
-uv run localvoice serve      # sobe em https:// automaticamente quando o cert existe
+uv sync --group tls
+uv run localvoice gen-cert
+uv run localvoice serve
 ```
 
-Abra `https://<ip-do-pc>:8000/` no celular (mesma rede, use Chrome) e aceite o
-aviso de certificado autoassinado uma vez. Depois o microfone é liberado.
+Depois abra `https://<ip-do-pc>:8000/` no celular e aceite o certificado local.
 
-## Configuração
+## Configuração do agente
 
-Todas as variáveis usam o prefixo `LOCALVOICE_` (ver `.env.example`) — o prefixo evita colisão com variáveis de ferramentas como `OLLAMA_HOST`: URL do
-Redis e nomes das filas, host e modelo do Ollama, caminho da voz do Piper e
-host/porta do gateway.
+```dotenv
+LOCALVOICE_OLLAMA_MODEL=llama3.1:8b
+LOCALVOICE_OLLAMA_TEMPERATURE=0.3
+LOCALVOICE_AGENT_DB_PATH=data/localvoice.db
+LOCALVOICE_AGENT_HISTORY_RUNS=6
+```
+
+Temperaturas mais baixas deixam a linguagem mais consistente. O banco SQLite
+mantém cada conversa separada pelo identificador enviado pelo navegador.
 
 ## Desenvolvimento
 
 ```bash
-uv run pre-commit install  # habilita os hooks (ruff + pytest) a cada commit
-uv run ruff check .        # lint
-uv run ruff format .       # formatação
-uv run pytest              # testes (unitários + integração)
+uv run pre-commit install
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
 ```
 
-Os testes de `src/agents/` usam `pytest.importorskip("agno")` e só rodam com o
-Agno instalado; os de `tests/integration/` exercitam o gateway com `TestClient`
-e o `TestRedisBroker` (Redis em memória), sem servidor Redis real. Os testes
-unitários rodam sem as dependências pesadas (Piper/ONNX).
+Os testes verificam, entre outros pontos, que Markdown e asteriscos não chegam
+ao Piper e que os arquivos CSS/JS são servidos pelo gateway.

@@ -1,9 +1,4 @@
-"""Worker Agno + Piper: consome comandos, gera resposta e sintetiza áudio.
-
-Executar com:
-
-    faststream run src.worker.app:app
-"""
+"""Worker Agno + Piper: consome comandos, executa o agente e sintetiza áudio."""
 
 import asyncio
 import logging
@@ -17,6 +12,7 @@ from src.agents.team import build_team
 from src.core.capabilities import describe_report, resolve_capabilities
 from src.core.config import get_settings
 from src.core.schemas import AgentResponse, VoiceCommand
+from src.core.speech_text import normalize_for_speech
 from src.tools.tts import PiperSynthesizer, load_piper_voice
 
 logger = logging.getLogger("localvoice.worker")
@@ -48,11 +44,13 @@ def _get_synthesizer() -> PiperSynthesizer:
     return _synthesizer
 
 
-async def _generate_reply(text: str) -> str:
-    """Roda a equipe Agno e devolve a resposta textual final."""
-    result = await _get_team().arun(text)
-    content = result.content
-    return content if isinstance(content, str) else str(content)
+async def _generate_reply(text: str, session_id: str) -> str:
+    """Executa o agente na sessão e devolve texto seguro para exibição e TTS."""
+    result = await _get_team().arun(text, session_id=session_id)
+    reply = normalize_for_speech(result.content)
+    if reply:
+        return reply
+    return "Não consegui formular uma resposta falada. Tente perguntar de outra forma."
 
 
 @app.on_startup
@@ -72,11 +70,11 @@ async def on_startup() -> None:
 
 @broker.subscriber(settings.voice_commands_channel)
 async def handle_voice_command(command: VoiceCommand) -> None:
-    """Processa um comando de voz e publica a resposta com áudio sintetizado."""
+    """Processa um comando e publica texto normalizado com áudio sintetizado."""
     started = time.perf_counter()
     logger.info("Processando comando: session_id=%s", command.session_id)
 
-    reply_text = await _generate_reply(command.text)
+    reply_text = await _generate_reply(command.text, command.session_id)
     audio_b64 = await asyncio.to_thread(_get_synthesizer().to_wav_base64, reply_text)
 
     response = AgentResponse(

@@ -1,33 +1,30 @@
-"""Montagem da equipe de agentes do LocalVoice.
+"""Orquestração dos agentes especializados do LocalVoice."""
 
-Começa mínima (um assistente sob um líder), mas a estrutura de equipe já permite
-adicionar novos membros e ferramentas sem alterar gateway ou worker.
-"""
-
+from agno.db.sqlite import SqliteDb
 from agno.team import Team
 
-from src.agents.factory import build_model, make_agent
+from src.agents.conversation_agent import build_conversation_agent
+from src.agents.factory import build_model
+from src.agents.system_agent import build_system_agent
 from src.core.config import Settings
-from src.core.instructions import (
-    ASSISTANT_INSTRUCTIONS,
-    SHARED_INSTRUCTIONS,
-    TEAM_LEADER_INSTRUCTIONS,
-)
+from src.core.instructions import SHARED_INSTRUCTIONS, TEAM_LEADER_INSTRUCTIONS
 
 
 def build_team(settings: Settings) -> Team:
-    """Constrói a equipe Agno responsável por gerar a resposta falada."""
-    assistant = make_agent(
-        settings,
-        name="Assistente",
-        role="Responder às solicitações do usuário de forma útil e concisa.",
-        instructions=[*SHARED_INSTRUCTIONS, *ASSISTANT_INSTRUCTIONS],
-    )
+    """Cria a equipe e mantém o histórico compartilhado por ``session_id``."""
+    settings.agent_db_path.parent.mkdir(parents=True, exist_ok=True)
 
     return Team(
+        id="localvoice-team",
         name="LocalVoice",
         model=build_model(settings),
-        members=[assistant],
+        members=[
+            build_conversation_agent(settings),
+            build_system_agent(settings),
+        ],
+        db=SqliteDb(db_file=str(settings.agent_db_path)),
         instructions=[*SHARED_INSTRUCTIONS, *TEAM_LEADER_INSTRUCTIONS],
+        add_history_to_context=True,
+        num_history_runs=settings.agent_history_runs,
         markdown=False,
     )
