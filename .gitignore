@@ -12,9 +12,6 @@ wheels/
 # Ambiente e segredos
 .env
 
-# Memória local do agente
-data/
-
 # Modelos de voz do Piper
 voices/*.onnx
 voices/*.onnx.json
