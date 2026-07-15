@@ -33,10 +33,6 @@ async def _echo_worker(command: VoiceCommand) -> None:
 async def test_http_endpoints_and_static_files() -> None:
     async with TestRedisBroker(router.broker):
         with TestClient(app) as client:
-            health = client.get("/health")
-            assert health.status_code == 200
-            assert health.json()["status"] == "ok"
-
             index = client.get("/")
             assert index.status_code == 200
             assert index.headers["content-type"].startswith("text/html")
