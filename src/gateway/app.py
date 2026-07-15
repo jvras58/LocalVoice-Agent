@@ -45,7 +45,7 @@ async def index() -> FileResponse:
     return FileResponse(_CLIENT_INDEX)
 
 
-@app.get("/health")
+@app.get("/", include_in_schema=False)
 async def health() -> dict[str, object]:
     """Checagem simples de liveness e sessões ativas."""
     return {"status": "ok", "active_sessions": connections.active_sessions()}

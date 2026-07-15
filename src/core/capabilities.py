@@ -47,7 +47,7 @@ def probe_ollama(host: str, timeout: float = _OLLAMA_PROBE_TIMEOUT_SECONDS) -> b
     try:
         with urllib.request.urlopen(url, timeout=timeout) as response:
             return response.status == 200
-    except OSError:  # URLError e TimeoutError são subclasses de OSError
+    except OSError:
         return False
 
 
