@@ -1,9 +1,4 @@
-"""API Gateway: WebSocket bidirecional entre o cliente e o broker Redis.
-
-Fluxo:
-- recebe texto (STT) do cliente pelo WebSocket e publica ``VoiceCommand``;
-- assina ``agent_responses`` e injeta cada resposta no WebSocket da sessão.
-"""
+"""API Gateway: WebSocket bidirecional entre cliente, Redis e worker."""
 
 import json
 import logging
@@ -11,6 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from faststream.redis.fastapi import RedisRouter
 
 from src.core.config import get_settings
@@ -23,12 +19,13 @@ settings = get_settings()
 router = RedisRouter(settings.redis_url)
 connections = ConnectionRegistry()
 
-_CLIENT_INDEX = Path(__file__).resolve().parents[2] / "client" / "index.html"
+_CLIENT_DIR = Path(__file__).resolve().parents[2] / "client"
+_CLIENT_INDEX = _CLIENT_DIR / "index.html"
 
 
 @router.subscriber(settings.agent_responses_channel)
 async def forward_response(response: AgentResponse) -> None:
-    """Entrega a resposta do agente ao WebSocket da sessão de origem."""
+    """Entrega a resposta ao WebSocket da sessão de origem."""
     delivered = await connections.send(response.session_id, response.model_dump())
     if not delivered:
         logger.warning(
@@ -38,6 +35,8 @@ async def forward_response(response: AgentResponse) -> None:
 
 app = FastAPI(title="LocalVoice Gateway")
 app.include_router(router)
+app.mount("/css", StaticFiles(directory=_CLIENT_DIR / "css"), name="client-css")
+app.mount("/js", StaticFiles(directory=_CLIENT_DIR / "js"), name="client-js")
 
 
 @app.get("/", include_in_schema=False)
@@ -53,11 +52,7 @@ async def health() -> dict[str, object]:
 
 
 def _build_command(session_id: str, raw: str) -> VoiceCommand | None:
-    """Converte a mensagem recebida do cliente em :class:`VoiceCommand`.
-
-    Aceita tanto JSON ``{"text": "..."}`` quanto texto puro. Retorna ``None``
-    quando o texto é vazio, para que o gateway simplesmente ignore o quadro.
-    """
+    """Converte JSON ou texto puro em um comando de voz válido."""
     text = raw
     try:
         parsed = json.loads(raw)
@@ -74,7 +69,7 @@ def _build_command(session_id: str, raw: str) -> VoiceCommand | None:
 
 @app.websocket("/ws/{session_id}")
 async def voice_socket(websocket: WebSocket, session_id: str) -> None:
-    """Conexão de voz de uma sessão do cliente."""
+    """Mantém a conexão de voz de uma sessão do cliente."""
     await connections.connect(session_id, websocket)
     logger.info("WebSocket conectado: session_id=%s", session_id)
     try:

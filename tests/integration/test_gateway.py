@@ -1,10 +1,4 @@
-"""Testes de integração do gateway.
-
-Rodam apenas quando ``fastapi``/``faststream`` estão instalados. Usam o
-``TestRedisBroker`` (broker Redis em memória) para exercitar o caminho completo
-sem um servidor Redis real: WebSocket de entrada -> publicação -> worker
-(simulado) -> ``agent_responses`` -> WebSocket de saída.
-"""
+"""Testes do gateway com Redis em memória."""
 
 import json
 
@@ -26,7 +20,6 @@ settings = get_settings()
 
 @router.subscriber(settings.voice_commands_channel)
 async def _echo_worker(command: VoiceCommand) -> None:
-    """Worker simulado: devolve a resposta como o worker real faria."""
     await router.broker.publish(
         AgentResponse(
             session_id=command.session_id,
@@ -37,7 +30,7 @@ async def _echo_worker(command: VoiceCommand) -> None:
     )
 
 
-async def test_http_endpoints() -> None:
+async def test_http_endpoints_and_static_files() -> None:
     async with TestRedisBroker(router.broker):
         with TestClient(app) as client:
             health = client.get("/health")
@@ -47,6 +40,9 @@ async def test_http_endpoints() -> None:
             index = client.get("/")
             assert index.status_code == 200
             assert index.headers["content-type"].startswith("text/html")
+
+            assert client.get("/css/styles.css").status_code == 200
+            assert client.get("/js/app.js").status_code == 200
 
 
 async def test_ws_round_trip_delivers_agent_response() -> None:
@@ -62,7 +58,6 @@ async def test_ws_round_trip_delivers_agent_response() -> None:
 
 
 async def test_empty_text_is_ignored() -> None:
-    """Texto vazio é descartado; apenas o comando válido seguinte é respondido."""
     async with TestRedisBroker(router.broker):
         with TestClient(app) as client:
             with client.websocket_connect("/ws/sess-2") as ws:

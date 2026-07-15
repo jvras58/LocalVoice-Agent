@@ -12,7 +12,10 @@ wheels/
 # Ambiente e segredos
 .env
 
-# Modelos de voz do Piper (baixados localmente)
+# Memória local do agente
+data/
+
+# Modelos de voz do Piper
 voices/*.onnx
 voices/*.onnx.json
 
@@ -20,5 +23,5 @@ voices/*.onnx.json
 .pytest_cache/
 .ruff_cache/
 
-# Certificados TLS locais (nunca versionar chaves)
+# Certificados TLS locais
 certs/
