@@ -1,10 +1,10 @@
 """Testes da construção do assistente e do modelo Ollama."""
 
-from pathlib import Path
-
 import pytest
 
 pytest.importorskip("agno")
+
+from agno.db.postgres import PostgresDb
 
 from src.agents.conversation_agent import build_conversation_agent
 from src.agents.factory import build_model
@@ -25,12 +25,19 @@ def test_build_model_uses_settings() -> None:
     assert model.options["temperature"] == 0.25
 
 
-def test_build_team_has_members_and_memory(tmp_path: Path) -> None:
-    settings = Settings(agent_db_path=tmp_path / "sessions.db")
+def test_build_team_has_members_and_postgres_memory() -> None:
+    settings = Settings(
+        database_url="postgresql+psycopg://user:pass@localhost:5432/test",
+        database_schema="test_schema",
+        session_table="test_sessions",
+    )
     team = build_team(settings)
 
     assert team.name == "LocalVoice"
-    assert team.db is not None
+    assert isinstance(team.db, PostgresDb)
+    assert team.db.db_url == settings.database_url
+    assert team.db.db_schema == "test_schema"
+    assert team.db.session_table_name == "test_sessions"
     assert team.add_history_to_context is True
     assert [member.name for member in team.members] == ["Conversação", "Sistema"]
 

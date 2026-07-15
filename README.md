@@ -22,7 +22,7 @@ agente, as ferramentas e o TTS; o celular funciona como interface de voz.
 - **Gateway** (`src/gateway/`): FastAPI, arquivos estáticos e WebSocket.
 - **Broker**: Redis (`voice_commands`, `agent_responses`).
 - **Worker** (`src/worker/`): Agno Team, normalização e Piper TTS.
-- **Memória**: SQLite local em `data/localvoice.db`.
+- **Memória**: sessões persistidas no PostgreSQL fornecido pelo serviço pgvector.
 
 Detalhes em [`docs/architecture.md`](docs/architecture.md).
 
@@ -53,6 +53,24 @@ mv pt_BR-faber-medium.onnx* voices/
 cp .env.example .env
 ```
 
+O serviço `pgvector` também é o PostgreSQL usado pelo Agno para persistir as
+sessões. A extensão vetorial fica disponível para uma base RAG futura, mas o
+histórico de conversa é salvo em tabelas relacionais comuns.
+
+### Recriar um volume incompatível com PostgreSQL 18
+
+O PostgreSQL 18 usa um diretório de dados específico da versão. Se o volume foi
+criado anteriormente com o mount em `/var/lib/postgresql/data` e não contém
+dados que precisem ser mantidos, recrie-o uma única vez:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+Não use `down -v` em um ambiente cujo banco precise ser preservado; nesse caso,
+faça backup e migração antes de trocar o layout do volume.
+
 ## Execução
 
 Em terminais separados:
@@ -82,11 +100,13 @@ Depois abra `https://<ip-do-pc>:8000/` no celular e aceite o certificado local.
 ```dotenv
 LOCALVOICE_OLLAMA_MODEL=llama3.1:8b
 LOCALVOICE_OLLAMA_TEMPERATURE=0.3
-LOCALVOICE_AGENT_DB_PATH=data/localvoice.db
+LOCALVOICE_DATABASE_URL=postgresql+psycopg://ai:ai@localhost:5532/ai
+LOCALVOICE_DATABASE_SCHEMA=localvoice
+LOCALVOICE_SESSION_TABLE=localvoice_sessions
 LOCALVOICE_AGENT_HISTORY_RUNS=6
 ```
 
-Temperaturas mais baixas deixam a linguagem mais consistente. O banco SQLite
+Temperaturas mais baixas deixam a linguagem mais consistente. O PostgreSQL
 mantém cada conversa separada pelo identificador enviado pelo navegador.
 
 ## Desenvolvimento

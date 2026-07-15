@@ -13,7 +13,7 @@ Navegador -> WebSocket -> Gateway -> Redis -> Worker
                                             |-- Agno Team
                                             |   |-- Conversação
                                             |   `-- Sistema + ferramentas
-                                            |-- SQLite (sessões)
+                                            |-- PostgreSQL (sessões)
                                             `-- Piper TTS
 ```
 
@@ -27,8 +27,9 @@ Navegador -> WebSocket -> Gateway -> Redis -> Worker
 - **Worker (`src/worker/`)**: `app.py` registra hooks e subscriber; o
   `controller.py` executa a equipe, normaliza a saída, chama o Piper e publica a
   resposta.
-- **Equipe (`src/agents/`)**: líder com memória SQLite por `session_id`, membro
-  de conversação e membro de sistema com ferramentas explicitamente permitidas.
+- **Equipe (`src/agents/`)**: líder com memória PostgreSQL por `session_id`,
+  membro de conversação e membro de sistema com ferramentas explicitamente
+  permitidas.
 
 ## Fluxo de resposta
 
@@ -59,8 +60,11 @@ e funciona como última barreira antes da interface e do sintetizador.
 
 ## Persistência e limites
 
-- O histórico é salvo em `data/localvoice.db` e separado pelo `session_id`.
+- O histórico é salvo pelo `PostgresDb` no schema e na tabela configurados por
+  `LOCALVOICE_DATABASE_SCHEMA` e `LOCALVOICE_SESSION_TABLE`, sempre separado
+  pelo `session_id`.
 - A quantidade de turnos enviada ao modelo é limitada por
   `LOCALVOICE_AGENT_HISTORY_RUNS`.
 - Ainda não há autenticação; exponha o gateway apenas em redes confiáveis.
-- O PostgreSQL/pgvector continua disponível para uma base RAG futura.
+- O mesmo PostgreSQL inclui a extensão pgvector, disponível para uma base RAG
+  futura sem misturar vetores com as tabelas relacionais de sessão.

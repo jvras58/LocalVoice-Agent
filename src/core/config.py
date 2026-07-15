@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1:8b"
     ollama_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
 
-    agent_db_path: Path = Field(default=Path("data/localvoice.db"))
+    database_url: str = "postgresql+psycopg://ai:ai@localhost:5532/ai"
+    database_schema: str = "localvoice"
+    session_table: str = "localvoice_sessions"
     agent_history_runs: int = Field(default=6, ge=1, le=20)
 
     piper_voice_path: Path = Field(default=Path("voices/pt_BR-faber-medium.onnx"))
