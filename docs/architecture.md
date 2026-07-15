@@ -10,7 +10,9 @@ Redis.
 
 ```text
 Navegador -> WebSocket -> Gateway -> Redis -> Worker
-                                            |-- Agno Agent + ferramentas
+                                            |-- Agno Team
+                                            |   |-- Conversação
+                                            |   `-- Sistema + ferramentas
                                             |-- SQLite (sessões)
                                             `-- Piper TTS
 ```
@@ -21,28 +23,30 @@ Navegador -> WebSocket -> Gateway -> Redis -> Worker
 - **Gateway (`src/gateway/`)**: serve HTML/CSS/JS, mantém WebSockets e encaminha
   mensagens entre o navegador e o Redis.
 - **Broker**: canais `voice_commands` e `agent_responses`.
-- **Worker (`src/worker/`)**: executa o agente, normaliza a saída e chama o Piper.
-- **Agente (`src/agents/`)**: modelo Ollama, memória SQLite por `session_id` e
-  ferramentas locais explicitamente permitidas.
+- **Worker (`src/worker/`)**: executa a equipe, normaliza a saída e chama o Piper.
+- **Equipe (`src/agents/`)**: líder com memória SQLite por `session_id`, membro
+  de conversação e membro de sistema com ferramentas explicitamente permitidas.
 
 ## Fluxo de resposta
 
 1. O navegador transcreve a fala e envia `text` com um `session_id` estável.
 2. O gateway publica um `VoiceCommand`.
-3. O worker executa o agente usando o mesmo `session_id`.
-4. O agente pode responder diretamente ou chamar uma ferramenta autorizada.
-5. `normalize_for_speech` remove Markdown e símbolos inadequados ao TTS.
-6. O Piper sintetiza exatamente o texto normalizado.
-7. Texto e áudio retornam para a sessão de origem.
+3. O worker executa a equipe usando o mesmo `session_id`.
+4. O líder delega ao membro de conversação ou ao membro de sistema.
+5. O membro de sistema pode chamar uma ferramenta autorizada.
+6. `normalize_for_speech` remove Markdown e símbolos inadequados ao TTS.
+7. O Piper sintetiza exatamente o texto normalizado.
+8. Texto e áudio retornam para a sessão de origem.
 
 ## Ferramentas atuais
 
 - `get_current_datetime`: consulta data, hora e fuso da máquina.
 - `get_runtime_status`: consulta as capacidades locais do LocalVoice.
 
-As ferramentas atuais são somente leitura. Ferramentas futuras que alterem
-arquivos, lembretes ou serviços devem exigir confirmação e ter parâmetros
-validados; o agente não deve receber acesso irrestrito ao shell.
+As ferramentas atuais pertencem apenas ao agente de sistema e são somente
+leitura. Ferramentas futuras que alterem arquivos, lembretes ou serviços devem
+exigir confirmação e ter parâmetros validados; nenhum agente deve receber
+acesso irrestrito ao shell.
 
 ## Qualidade da saída
 

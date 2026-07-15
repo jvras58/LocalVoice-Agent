@@ -11,7 +11,8 @@ agente, as ferramentas e o TTS; o celular funciona como interface de voz.
 
 - Conversa em português do Brasil com histórico separado por sessão.
 - Respostas normalizadas antes da interface e do Piper, sem Markdown ou `*`.
-- Consulta de data/hora e diagnóstico dos recursos locais por ferramentas Agno.
+- Equipe Agno com membros especializados em conversação e sistema local.
+- Consulta de data/hora e diagnóstico dos recursos locais por ferramentas seguras.
 - STT no navegador, LLM via Ollama e TTS local com Piper.
 - Comunicação assíncrona por WebSocket e Redis.
 
@@ -20,7 +21,7 @@ agente, as ferramentas e o TTS; o celular funciona como interface de voz.
 - **Cliente web** (`client/`): Web Speech API, WebSocket e Web Audio API.
 - **Gateway** (`src/gateway/`): FastAPI, arquivos estáticos e WebSocket.
 - **Broker**: Redis (`voice_commands`, `agent_responses`).
-- **Worker** (`src/worker/`): Agno Agent, normalização e Piper TTS.
+- **Worker** (`src/worker/`): Agno Team, normalização e Piper TTS.
 - **Memória**: SQLite local em `data/localvoice.db`.
 
 Detalhes em [`docs/architecture.md`](docs/architecture.md).
@@ -29,7 +30,7 @@ Detalhes em [`docs/architecture.md`](docs/architecture.md).
 
 ```text
 src/
-├── agents/     # assistant.py e factory.py
+├── agents/     # conversation_agent.py, system_agent.py, team.py e factory.py
 ├── core/       # config, schemas, instructions, normalização e preflight
 ├── gateway/    # FastAPI, arquivos estáticos e WebSocket
 ├── tools/      # ferramentas do agente e Piper TTS

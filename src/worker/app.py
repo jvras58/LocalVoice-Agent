@@ -4,11 +4,11 @@ import asyncio
 import logging
 import time
 
-from agno.agent import Agent
+from agno.team import Team
 from faststream import FastStream
 from faststream.redis import RedisBroker
 
-from src.agents.assistant import build_assistant
+from src.agents.team import build_team
 from src.core.capabilities import describe_report, resolve_capabilities
 from src.core.config import get_settings
 from src.core.schemas import AgentResponse, VoiceCommand
@@ -21,15 +21,15 @@ settings = get_settings()
 broker = RedisBroker(settings.redis_url)
 app = FastStream(broker)
 
-_agent: Agent | None = None
+_team: Team | None = None
 _synthesizer: PiperSynthesizer | None = None
 
 
-def _get_agent() -> Agent:
-    global _agent
-    if _agent is None:
-        _agent = build_assistant(settings)
-    return _agent
+def _get_team() -> Team:
+    global _team
+    if _team is None:
+        _team = build_team(settings)
+    return _team
 
 
 def _get_synthesizer() -> PiperSynthesizer:
@@ -46,7 +46,7 @@ def _get_synthesizer() -> PiperSynthesizer:
 
 async def _generate_reply(text: str, session_id: str) -> str:
     """Executa o agente na sessão e devolve texto seguro para exibição e TTS."""
-    result = await _get_agent().arun(text, session_id=session_id)
+    result = await _get_team().arun(text, session_id=session_id)
     reply = normalize_for_speech(result.content)
     if reply:
         return reply
@@ -63,7 +63,7 @@ async def on_startup() -> None:
         logger.warning(
             "Preflight incompleto — o worker pode falhar ao processar comandos."
         )
-    _get_agent()
+    _get_team()
     _get_synthesizer()
     logger.info("Worker pronto (modelo=%s).", settings.ollama_model)
 

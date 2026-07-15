@@ -6,8 +6,10 @@ import pytest
 
 pytest.importorskip("agno")
 
-from src.agents.assistant import build_assistant
+from src.agents.conversation_agent import build_conversation_agent
 from src.agents.factory import build_model
+from src.agents.system_agent import build_system_agent
+from src.agents.team import build_team
 from src.core.config import Settings
 
 
@@ -23,11 +25,20 @@ def test_build_model_uses_settings() -> None:
     assert model.options["temperature"] == 0.25
 
 
-def test_build_assistant_has_memory_and_tools(tmp_path: Path) -> None:
+def test_build_team_has_members_and_memory(tmp_path: Path) -> None:
     settings = Settings(agent_db_path=tmp_path / "sessions.db")
-    assistant = build_assistant(settings)
+    team = build_team(settings)
 
-    assert assistant.name == "LocalVoice"
-    assert assistant.db is not None
-    assert assistant.add_history_to_context is True
-    assert len(assistant.tools) == 2
+    assert team.name == "LocalVoice"
+    assert team.db is not None
+    assert team.add_history_to_context is True
+    assert [member.name for member in team.members] == ["Conversação", "Sistema"]
+
+
+def test_agents_have_separate_responsibilities() -> None:
+    settings = Settings()
+    conversation = build_conversation_agent(settings)
+    system = build_system_agent(settings)
+
+    assert not conversation.tools
+    assert len(system.tools) == 2
