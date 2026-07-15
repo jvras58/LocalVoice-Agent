@@ -44,13 +44,6 @@ class GatewayController:
             return None
         return VoiceCommand(session_id=session_id, text=text)
 
-    def health(self) -> dict[str, object]:
-        """Retorna o estado básico do gateway."""
-        return {
-            "status": "ok",
-            "active_sessions": self.connections.active_sessions(),
-        }
-
     async def forward_response(self, response: AgentResponse) -> None:
         """Entrega uma resposta ao WebSocket da sessão de origem."""
         delivered = await self.connections.send(

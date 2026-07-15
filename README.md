@@ -32,7 +32,7 @@ Detalhes em [`docs/architecture.md`](docs/architecture.md).
 src/
 ├── agents/     # conversation_agent.py, system_agent.py, team.py e factory.py
 ├── core/       # config, schemas, instructions, normalização e preflight
-├── gateway/    # app.py (wiring), api.py (rotas), controller.py (casos de uso)
+├── gateway/    # app.py, routes.py, api.py, controller.py e connections.py
 ├── tools/      # ferramentas do agente e Piper TTS
 ├── worker/     # app.py (wiring) e controller.py (processamento)
 ├── ui/         # painel Streamlit

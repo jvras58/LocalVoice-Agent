@@ -49,10 +49,6 @@ def test_build_command_rejects_empty_text() -> None:
     assert make_controller().build_command("s1", '{"text": "   "}') is None
 
 
-def test_health_reports_active_sessions() -> None:
-    assert make_controller().health() == {"status": "ok", "active_sessions": 0}
-
-
 async def test_forward_response_uses_connection_registry() -> None:
     controller = make_controller()
     websocket = FakeWebSocket()

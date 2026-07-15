@@ -20,9 +20,9 @@ Navegador -> WebSocket -> Gateway -> Redis -> Worker
 ## Camadas
 
 - **Cliente (`client/`)**: Web Speech API, histórico visual e reprodução WAV.
-- **Gateway (`src/gateway/`)**: `app.py` compõe as dependências, `api.py` declara
-  as rotas e os arquivos estáticos, e `controller.py` coordena WebSockets e
-  publicação no Redis.
+- **Gateway (`src/gateway/`)**: `app.py` compõe as dependências, `routes.py`
+  declara HTTP e WebSocket, `api.py` cria a aplicação e monta os arquivos
+  estáticos, e `controller.py` coordena sessões e publicação no Redis.
 - **Broker**: canais `voice_commands` e `agent_responses`.
 - **Worker (`src/worker/`)**: `app.py` registra hooks e subscriber; o
   `controller.py` executa a equipe, normaliza a saída, chama o Piper e publica a

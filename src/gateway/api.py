@@ -2,12 +2,12 @@
 
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI, WebSocket
-from fastapi.responses import FileResponse
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from faststream.redis.fastapi import RedisRouter
 
 from src.gateway.controller import GatewayController
+from src.gateway.routes import create_routes
 
 _DEFAULT_CLIENT_DIR = Path(__file__).resolve().parents[2] / "client"
 
@@ -18,24 +18,10 @@ def create_api(
     *,
     client_dir: Path = _DEFAULT_CLIENT_DIR,
 ) -> FastAPI:
-    """Monta a aplicação FastAPI e conecta suas rotas ao controller."""
-    api_router = APIRouter()
-
-    @api_router.get("/", include_in_schema=False)
-    async def index() -> FileResponse:
-        return FileResponse(client_dir / "index.html")
-
-    @api_router.get("/health")
-    async def health() -> dict[str, object]:
-        return controller.health()
-
-    @api_router.websocket("/ws/{session_id}")
-    async def voice_socket(websocket: WebSocket, session_id: str) -> None:
-        await controller.handle_socket(websocket, session_id)
-
+    """Monta a aplicação, inclui os routers e serve os arquivos estáticos."""
     app = FastAPI(title="LocalVoice Gateway")
     app.include_router(broker_router)
-    app.include_router(api_router)
+    app.include_router(create_routes(controller, client_dir=client_dir))
     app.mount(
         "/css",
         StaticFiles(directory=client_dir / "css"),
